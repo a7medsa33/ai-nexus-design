@@ -9,6 +9,9 @@ import Index from "./pages/Index";
 import Documents from "./pages/Documents";
 import DocumentDetail from "./pages/DocumentDetail";
 import AiTools from "./pages/AiTools";
+import Notes from "./pages/Notes";
+import Tasks from "./pages/Tasks";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,7 +28,10 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/documents/:id" element={<DocumentDetail />} />
+              <Route path="/notes" element={<Notes />} />
+              <Route path="/tasks" element={<Tasks />} />
               <Route path="/ai" element={<AiTools />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
