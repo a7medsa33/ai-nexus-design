@@ -1,4 +1,4 @@
-import { delay } from "@/lib/axios";
+import api from "@/lib/axios";
 
 export interface User {
   id: string;
@@ -7,25 +7,49 @@ export interface User {
   avatarUrl?: string;
 }
 
+interface AuthResponse {
+  user: User;
+  token: string;
+}
+
 export const authService = {
-  // TODO: Replace with real API calls
-  login: async (email: string, password: string): Promise<User> => {
-    await delay(500);
-    // Mock — accept any credentials
-    return { id: "1", name: "Alex Johnson", email };
+  /** POST /users/auth/register */
+  register: async (name: string, email: string, password: string): Promise<AuthResponse> => {
+    const res = await api.post<AuthResponse>("/users/auth/register", { name, email, password });
+    return res.data;
   },
 
-  signup: async (name: string, email: string, password: string): Promise<User> => {
-    await delay(500);
-    return { id: Date.now().toString(), name, email };
+  /** POST /users/auth/login */
+  login: async (email: string, password: string): Promise<AuthResponse> => {
+    const res = await api.post<AuthResponse>("/users/auth/login", { email, password });
+    return res.data;
   },
 
-  logout: async (): Promise<void> => {
-    await delay();
+  /** GET /users/profile */
+  getProfile: async (): Promise<User> => {
+    const res = await api.get<User>("/users/profile");
+    return res.data;
   },
 
-  getCurrentUser: async (): Promise<User | null> => {
-    await delay();
-    return { id: "1", name: "Alex Johnson", email: "alex@example.com" };
+  /** PUT /users/profile */
+  updateProfile: async (data: Partial<Pick<User, "name" | "email">>): Promise<User> => {
+    const res = await api.put<User>("/users/profile", data);
+    return res.data;
+  },
+
+  /** DELETE /users/profile */
+  deleteAccount: async (): Promise<void> => {
+    await api.delete("/users/profile");
+  },
+
+  /** GET /users (admin only) */
+  getAllUsers: async (): Promise<User[]> => {
+    const res = await api.get<User[]>("/users");
+    return res.data;
+  },
+
+  logout: () => {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("auth_user");
   },
 };
