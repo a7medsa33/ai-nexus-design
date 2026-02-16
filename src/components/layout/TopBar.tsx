@@ -1,4 +1,5 @@
-import { Search, Plus, Menu, User } from "lucide-react";
+import { Search, Plus, Menu, User, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,6 +26,7 @@ interface TopBarProps {
 
 export function TopBar({ onMobileMenuToggle }: TopBarProps) {
   const location = useLocation();
+  const { user, logout } = useAuth();
   const pathSegments = location.pathname.split("/").filter(Boolean);
 
   const breadcrumbs = [
@@ -85,9 +87,12 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="rounded-xl">
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Sign out</DropdownMenuItem>
+            {user && <DropdownMenuItem disabled className="text-xs text-muted-foreground">{user.email}</DropdownMenuItem>}
+            <DropdownMenuItem asChild><Link to="/settings">Profile</Link></DropdownMenuItem>
+            <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
+            <DropdownMenuItem onClick={logout} className="text-destructive">
+              <LogOut className="h-4 w-4 mr-2" /> Sign out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
