@@ -3,15 +3,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 export function ProfileForm() {
-  const [name, setName] = useState("Alex Johnson");
-  const [email, setEmail] = useState("alex@example.com");
+  const { user, updateProfile } = useAuth();
+  const { toast } = useToast();
+  const [name, setName] = useState(user?.name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+
+  const initials = (user?.name ?? "U").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
   const handleChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setter(e.target.value);
     setDirty(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateProfile({ name, email });
+      setDirty(false);
+      toast({ title: "Profile updated" });
+    } catch {
+      toast({ title: "Failed to update profile", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -23,7 +43,7 @@ export function ProfileForm() {
 
       <div className="flex items-center gap-4">
         <Avatar className="h-16 w-16">
-          <AvatarFallback className="text-lg bg-gradient-to-r from-indigo-500 to-violet-600 text-white">AJ</AvatarFallback>
+          <AvatarFallback className="text-lg bg-gradient-to-r from-primary to-accent text-primary-foreground">{initials}</AvatarFallback>
         </Avatar>
         <Button variant="outline" className="rounded-xl">Change Avatar</Button>
       </div>
@@ -39,10 +59,11 @@ export function ProfileForm() {
           <p className="text-xs text-muted-foreground">Used for notifications and account recovery</p>
         </div>
         <Button
-          disabled={!dirty}
-          className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white hover:opacity-90 disabled:opacity-50"
+          disabled={!dirty || saving}
+          onClick={handleSave}
+          className="rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
-          Save Changes
+          {saving ? "Saving…" : "Save Changes"}
         </Button>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { authService, type User } from "@/services/auth";
 
 interface AuthContextType {
@@ -6,26 +6,46 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => void;
+  updateProfile: (data: Partial<Pick<User, "name" | "email">>) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    // TODO: Replace with real session check via authService.getCurrentUser()
     const saved = localStorage.getItem("auth_user");
     return saved ? JSON.parse(saved) : null;
   });
   const [loading, setLoading] = useState(false);
 
+  // On mount, if we have a token, fetch fresh profile
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (token && !user) {
+      setLoading(true);
+      authService.getProfile()
+        .then((u) => {
+          setUser(u);
+          localStorage.setItem("auth_user", JSON.stringify(u));
+        })
+        .catch(() => {
+          // Token expired or invalid
+          authService.logout();
+          setUser(null);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     setLoading(true);
     try {
-      // TODO: Replace with real API call
-      const u = await authService.login(email, password);
-      setUser(u);
+      const { user: u, token } = await authService.login(email, password);
+      localStorage.setItem("auth_token", token);
       localStorage.setItem("auth_user", JSON.stringify(u));
+      setUser(u);
     } finally {
       setLoading(false);
     }
@@ -34,24 +54,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signup = useCallback(async (name: string, email: string, password: string) => {
     setLoading(true);
     try {
-      // TODO: Replace with real API call (authService.signup)
-      const u = await authService.login(email, password);
-      const newUser = { ...u, name };
-      setUser(newUser);
-      localStorage.setItem("auth_user", JSON.stringify(newUser));
+      const { user: u, token } = await authService.register(name, email, password);
+      localStorage.setItem("auth_token", token);
+      localStorage.setItem("auth_user", JSON.stringify(u));
+      setUser(u);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const logout = useCallback(async () => {
-    await authService.logout();
+  const logout = useCallback(() => {
+    authService.logout();
     setUser(null);
-    localStorage.removeItem("auth_user");
+  }, []);
+
+  const updateProfile = useCallback(async (data: Partial<Pick<User, "name" | "email">>) => {
+    const updated = await authService.updateProfile(data);
+    setUser(updated);
+    localStorage.setItem("auth_user", JSON.stringify(updated));
+  }, []);
+
+  const deleteAccount = useCallback(async () => {
+    await authService.deleteAccount();
+    authService.logout();
+    setUser(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, updateProfile, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );
